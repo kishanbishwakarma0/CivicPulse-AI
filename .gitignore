@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+.env.*
+
+# ML
+*.pt
+*.pth
+*.onnx
+
+# Data
+data/raw/
+data/processed/
+
+# Node
+node_modules/
+.next/
+out/
+
+# IDE
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
