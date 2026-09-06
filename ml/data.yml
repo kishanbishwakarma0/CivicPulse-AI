@@ -1,0 +1,11 @@
+path: /kaggle/input/rdd-2022/RDD_SPLIT
+
+train: train/images
+val: val/images
+test: test/images
+
+names:
+  0: Longitudinal Crack
+  1: Transverse Crack
+  2: Alligator Crack
+  3: Pothole
