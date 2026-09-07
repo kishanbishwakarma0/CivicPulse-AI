@@ -1,3 +1,4 @@
+import gc
 from pathlib import Path
 
 from ultralytics import YOLO
@@ -46,16 +47,19 @@ def ensure_model_exists():
 
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    model_bytes = supabase.storage.from_(
-        "issue-images"
-    ).download(
-        MODEL_STORAGE_PATH
+    model_bytes = (
+        supabase
+        .storage
+        .from_("issue-images")
+        .download(MODEL_STORAGE_PATH)
     )
 
     with open(MODEL_PATH, "wb") as model_file:
         model_file.write(model_bytes)
 
-    print(f"YOLO model downloaded successfully: {MODEL_PATH}")
+    print(
+        f"YOLO model downloaded successfully: {MODEL_PATH}"
+    )
 
 
 ensure_model_exists()
@@ -63,7 +67,10 @@ ensure_model_exists()
 model = YOLO(str(MODEL_PATH))
 
 
-def detect_damage(image_path: str, confidence_threshold: float = 0.25):
+def detect_damage(
+    image_path: str,
+    confidence_threshold: float = 0.25
+):
     """
     Run road-damage detection on an image.
 
@@ -77,13 +84,18 @@ def detect_damage(image_path: str, confidence_threshold: float = 0.25):
     results = model.predict(
         source=image_path,
         conf=confidence_threshold,
+        imgsz=320,
+        device="cpu",
+        max_det=10,
         verbose=False
     )
 
     result = results[0]
 
     image_height, image_width = result.orig_shape
-    image_area = float(image_width * image_height)
+    image_area = float(
+        image_width * image_height
+    )
 
     detections = []
 
@@ -104,14 +116,26 @@ def detect_damage(image_path: str, confidence_threshold: float = 0.25):
 
         detections.append({
             "damage_type": model.names[class_id],
-            "confidence": round(confidence, 3),
+            "confidence": round(
+                confidence,
+                3
+            ),
             "bounding_box": {
                 "x1": round(float(x1), 2),
                 "y1": round(float(y1), 2),
                 "x2": round(float(x2), 2),
                 "y2": round(float(y2), 2)
             },
-            "area_percent": round(float(area_percent), 3)
+            "area_percent": round(
+                float(area_percent),
+                3
+            )
         })
+
+    # Release temporary inference objects
+    # so memory can be reclaimed between requests.
+    del results
+    del result
+    gc.collect()
 
     return detections
