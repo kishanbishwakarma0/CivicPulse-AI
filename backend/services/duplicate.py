@@ -1,66 +1,70 @@
-from functools import lru_cache
-
-import torch
-from PIL import Image
-from transformers import CLIPModel, CLIPProcessor
-
-
-MODEL_NAME = "openai/clip-vit-base-patch32"
-
-
-@lru_cache(maxsize=1)
-def get_clip():
-    """
-    Load CLIP once and reuse it for subsequent requests.
-    """
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-
-    processor = CLIPProcessor.from_pretrained(MODEL_NAME)
-    model = CLIPModel.from_pretrained(MODEL_NAME)
-    model.to(device)
-    model.eval()
-
-    return processor, model, device
+import cv2
+import numpy as np
 
 
 def get_image_embedding(image_path: str) -> list[float]:
     """
-    Generate a normalized 512-dimensional CLIP image embedding.
+    Generate a lightweight normalized image embedding using HSV color
+    histogram + grayscale spatial features.
 
-    We explicitly run the vision encoder and visual projection instead of
-    calling CLIPModel.get_image_features(), because recent Transformers
-    versions can expose a different return structure for this method.
+    This avoids PyTorch/CLIP so the FastAPI service can run within
+    Render's free memory limit.
     """
-    processor, model, device = get_clip()
+    image = cv2.imread(image_path)
 
-    image = Image.open(image_path).convert("RGB")
-
-    inputs = processor(images=image, return_tensors="pt")
-    pixel_values = inputs["pixel_values"].to(device)
-
-    with torch.no_grad():
-        vision_outputs = model.vision_model(
-            pixel_values=pixel_values
-        )
-
-        pooled_output = vision_outputs.pooler_output
-
-        image_features = model.visual_projection(
-            pooled_output
-        )
-
-    if image_features.ndim != 2:
+    if image is None:
         raise RuntimeError(
-            f"Unexpected CLIP embedding shape: {tuple(image_features.shape)}"
+            f"Unable to read image: {image_path}"
         )
 
-    embedding = image_features / image_features.norm(
-        p=2,
-        dim=-1,
-        keepdim=True
+    # Resize for consistent processing
+    image = cv2.resize(image, (256, 256))
+
+    # HSV histogram captures overall visual/color characteristics
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    histogram = cv2.calcHist(
+        [hsv],
+        [0, 1],
+        None,
+        [16, 16],
+        [0, 180, 0, 256]
     )
 
-    return embedding[0].detach().cpu().tolist()
+    histogram = cv2.normalize(
+        histogram,
+        histogram
+    ).flatten()
+
+    # Small grayscale spatial representation
+    gray = cv2.cvtColor(
+        image,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    spatial = cv2.resize(
+        gray,
+        (16, 16)
+    ).astype(np.float32)
+
+    spatial /= 255.0
+
+    embedding = np.concatenate([
+        histogram,
+        spatial.flatten()
+    ]).astype(np.float32)
+
+    # L2 normalization
+    norm = np.linalg.norm(embedding)
+
+    if norm == 0:
+        raise RuntimeError(
+            "Unable to generate a valid image embedding."
+        )
+
+    embedding /= norm
+
+    return embedding.tolist()
 
 
 def cosine_similarity(
@@ -68,24 +72,36 @@ def cosine_similarity(
     embedding_b: list[float]
 ) -> float:
     """
-    Calculate cosine similarity only when both embeddings have the same
-    dimensionality.
+    Calculate cosine similarity between two embeddings.
     """
+
     if len(embedding_a) != len(embedding_b):
         raise ValueError(
             f"Embedding dimension mismatch: "
             f"{len(embedding_a)} vs {len(embedding_b)}"
         )
 
-    a = torch.tensor(embedding_a, dtype=torch.float32)
-    b = torch.tensor(embedding_b, dtype=torch.float32)
-
-    similarity = torch.nn.functional.cosine_similarity(
-        a.unsqueeze(0),
-        b.unsqueeze(0)
+    a = np.asarray(
+        embedding_a,
+        dtype=np.float32
     )
 
-    return float(similarity.item())
+    b = np.asarray(
+        embedding_b,
+        dtype=np.float32
+    )
+
+    denominator = (
+        np.linalg.norm(a) *
+        np.linalg.norm(b)
+    )
+
+    if denominator == 0:
+        return 0.0
+
+    return float(
+        np.dot(a, b) / denominator
+    )
 
 
 def classify_duplicate(
@@ -93,15 +109,14 @@ def classify_duplicate(
     same_damage_type: bool
 ) -> str:
     """
-    Prototype thresholds based on the 100-pair calibration previously run.
+    Classify an issue based on image similarity.
 
-    >= 0.82 + same damage type -> Duplicate
-    >= 0.70                    -> Related
-    otherwise                  -> New Issue
-
-    These thresholds are prototype thresholds, not validated production
-    duplicate-classification metrics.
+    NOTE:
+    These thresholds were originally calibrated for CLIP embeddings.
+    They MUST be recalibrated for the new lightweight embedding before
+    being treated as production-quality thresholds.
     """
+
     if similarity >= 0.82 and same_damage_type:
         return "Duplicate"
 
@@ -117,8 +132,9 @@ def find_best_match(
     existing_issues: list[dict]
 ) -> dict:
     """
-    Find the most similar existing issue that has an embedding.
+    Find the most similar existing issue that has a valid embedding.
     """
+
     best_match = None
 
     for issue in existing_issues:
@@ -127,12 +143,6 @@ def find_best_match(
         if not stored_embedding:
             continue
 
-        # The current CLIP model produces 512-dimensional embeddings.
-        # Ignore legacy/malformed embeddings rather than crashing the API.
-        if len(stored_embedding) != len(image_embedding):
-            continue
-
-        # Ignore legacy embeddings from a different CLIP representation.
         if len(stored_embedding) != len(image_embedding):
             continue
 
@@ -141,7 +151,11 @@ def find_best_match(
                 image_embedding,
                 stored_embedding
             )
-        except (TypeError, ValueError, RuntimeError):
+        except (
+            TypeError,
+            ValueError,
+            RuntimeError
+        ):
             continue
 
         same_damage_type = (
@@ -155,14 +169,18 @@ def find_best_match(
 
         candidate = {
             "issue_id": issue.get("id"),
-            "similarity": round(similarity, 4),
+            "similarity": round(
+                similarity,
+                4
+            ),
             "same_damage_type": same_damage_type,
             "classification": classification
         }
 
         if (
             best_match is None
-            or candidate["similarity"] > best_match["similarity"]
+            or candidate["similarity"]
+            > best_match["similarity"]
         ):
             best_match = candidate
 

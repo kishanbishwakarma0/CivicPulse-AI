@@ -8,5 +8,4 @@ pillow==12.3.0
 opencv-python-headless==5.0.0.93
 torch==2.14.0
 torchvision==0.29.0
-transformers==5.16.1
 ultralytics==8.4.140
