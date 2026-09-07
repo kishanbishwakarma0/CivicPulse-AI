@@ -4,7 +4,7 @@ import tempfile
 from uuid import uuid4
 
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi import Depends, FastAPI, File, UploadFile, HTTPException, Form
 
 from database import supabase
 
@@ -12,12 +12,13 @@ from services.detector import detect_damage
 from services.severity import estimate_severity
 from services.priority import calculate_priority
 from services.duplicate import get_image_embedding, cosine_similarity, find_best_match
+from auth import LoginRequest, authenticate_authority, authenticate_login
 
 
 app = FastAPI(
     title="CivicPulse AI API",
     description="AI-powered civic issue detection, prioritization and resolution verification",
-    version="1.0.0"
+    version="1.1.0"
 )
 
 app.add_middleware(
@@ -47,8 +48,36 @@ def health():
         "status": "healthy"
     }
 
+@app.post("/api/auth/login")
+def authority_login(payload: LoginRequest):
+    token = authenticate_login(
+        payload.username,
+        payload.password,
+    )
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in": 60 * 60 * 8,
+        "username": payload.username,
+    }
+
+
+@app.get("/api/auth/me")
+def authority_me(
+    current_authority: dict = Depends(authenticate_authority),
+):
+    return {
+        "authenticated": True,
+        "username": current_authority["sub"],
+        "role": current_authority["role"],
+    }
+
+
 @app.get("/api/issues")
-def get_issues():
+def get_issues(
+    current_authority: dict = Depends(authenticate_authority),
+):
     response = (
         supabase
         .table("issues")
@@ -64,7 +93,8 @@ def get_issues():
 @app.patch("/api/issues/{issue_id}/status")
 def update_issue_status(
     issue_id: str,
-    status: str
+    status: str,
+    current_authority: dict = Depends(authenticate_authority),
 ):
     allowed_statuses = {
         "Reported",
@@ -103,7 +133,8 @@ def update_issue_status(
 @app.post("/api/issues/{issue_id}/verify")
 async def verify_issue_resolution(
     issue_id: str,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_authority: dict = Depends(authenticate_authority),
 ):
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(

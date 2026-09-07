@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -149,9 +149,12 @@ export default function Home() {
             </a>
           </div>
 
-          <button className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium transition hover:bg-white/10">
+          <a
+            href="/login"
+            className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium transition hover:bg-white/10"
+          >
             Authority Login
-          </button>
+          </a>
         </div>
       </nav>
 
@@ -227,7 +230,7 @@ export default function Home() {
                 {selectedFile ? (
                   <>
                     <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-400/10 text-2xl">
-                      ✓
+                      âœ“
                     </div>
 
                     <p className="font-semibold text-white">
@@ -245,7 +248,7 @@ export default function Home() {
                 ) : (
                   <>
                     <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-400/10 text-3xl">
-                      ↑
+                      â†‘
                     </div>
 
                     <p className="text-lg font-semibold">
@@ -500,7 +503,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-6 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between lg:px-8">
-          <p>© 2026 CivicPulse AI</p>
+          <p>Â© 2026 CivicPulse AI</p>
           <p>AI-assisted civic infrastructure monitoring</p>
         </div>
       </footer>

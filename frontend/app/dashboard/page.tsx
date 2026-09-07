@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
@@ -59,17 +59,60 @@ export default function Dashboard() {
   const [filter, setFilter] = useState("All");
   const [verifyingIssueId, setVerifyingIssueId] = useState<string | null>(null);
   const [updatingIssueId, setUpdatingIssueId] = useState<string | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [authorityUsername, setAuthorityUsername] = useState("");
 
   useEffect(() => {
     const fetchIssues = async () => {
+      const token = localStorage.getItem("civicpulse_authority_token");
+
+      if (!token) {
+        window.location.replace("/login");
+        return;
+      }
+
       try {
-        const response = await fetch(`${API_URL}/api/issues`);
-        if (!response.ok) throw new Error("Failed to fetch issues");
+        const meResponse = await fetch(`${API_URL}/api/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (meResponse.status === 401 || meResponse.status === 403) {
+          localStorage.removeItem("civicpulse_authority_token");
+          window.location.replace("/login");
+          return;
+        }
+
+        if (!meResponse.ok) {
+          throw new Error("Authentication check failed");
+        }
+
+        const me = await meResponse.json();
+        setAuthorityUsername(me.username || "");
+
+        const response = await fetch(`${API_URL}/api/issues`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("civicpulse_authority_token");
+          window.location.replace("/login");
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch issues");
+        }
+
         const data = await response.json();
         setIssues(data.issues || []);
       } catch (error) {
         console.error(error);
       } finally {
+        setAuthChecking(false);
         setLoading(false);
       }
     };
@@ -83,7 +126,12 @@ export default function Dashboard() {
     try {
       const response = await fetch(
         `${API_URL}/api/issues/${issueId}/status?status=${encodeURIComponent(newStatus)}`,
-        { method: "PATCH" }
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("civicpulse_authority_token") || ""}`,
+          },
+        }
       );
 
       const data = await response.json();
@@ -130,13 +178,29 @@ export default function Dashboard() {
         const formData = new FormData();
         formData.append("file", file);
 
+        const token = localStorage.getItem("civicpulse_authority_token");
+
+        if (!token) {
+          window.location.replace("/login");
+          return;
+        }
+
         const response = await fetch(
           `${API_URL}/api/issues/${issueId}/verify`,
           {
             method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
             body: formData,
           }
         );
+
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("civicpulse_authority_token");
+          window.location.replace("/login");
+          return;
+        }
 
         const data = await response.json();
 
@@ -183,6 +247,11 @@ export default function Dashboard() {
     input.click();
   };
 
+  const logout = () => {
+    localStorage.removeItem("civicpulse_authority_token");
+    window.location.replace("/login");
+  };
+
   const counts = useMemo(() => {
     return {
       total: issues.length,
@@ -205,6 +274,20 @@ export default function Dashboard() {
           (issue) => issue.priority_level === filter
         );
 
+  if (authChecking) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-white">
+        <div className="rounded-2xl border border-white/10 bg-slate-900/60 px-8 py-7 text-center">
+          <p className="text-sm font-semibold text-cyan-400">CIVICPULSE AI</p>
+          <p className="mt-3 text-lg font-semibold">Checking authority session...</p>
+          <p className="mt-2 text-sm text-slate-500">
+            Verifying secure dashboard access.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <header className="border-b border-white/10 bg-slate-950">
@@ -218,12 +301,29 @@ export default function Dashboard() {
             </h1>
           </div>
 
-          <a
-            href="/"
-            className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium transition hover:bg-white/10"
-          >
-            Citizen Portal
-          </a>
+          <div className="flex items-center gap-3">
+            <div className="hidden text-right sm:block">
+              <p className="text-xs text-slate-500">Signed in as</p>
+              <p className="text-sm font-medium text-slate-200">
+                {authorityUsername || "Authority"}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium transition hover:bg-white/10"
+            >
+              Logout
+            </button>
+
+            <a
+              href="/"
+              className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium transition hover:bg-white/10"
+            >
+              Citizen Portal
+            </a>
+          </div>
         </div>
       </header>
 
