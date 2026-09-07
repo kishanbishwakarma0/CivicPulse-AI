@@ -4,7 +4,7 @@
 
 CivicPulse AI is an AI-powered civic infrastructure intelligence platform that detects road damage, estimates visual severity, prioritizes reported issues, identifies duplicate reports, verifies claimed repairs, detects persistent/reopened issues, and highlights geographic risk hotspots.
 
-It is designed as a technical prototype combining computer vision, image similarity, geospatial analysis, a FastAPI backend, a Next.js frontend, and Supabase.
+It combines computer vision, image similarity, geospatial analysis, a FastAPI backend, a Next.js frontend, and Supabase.
 
 ---
 
@@ -19,7 +19,7 @@ CivicPulse goes further:
 - What type of damage is visible?
 - How severe does it appear visually?
 - Which issues should be prioritized?
-- Is this report a duplicate of an existing issue?
+- Is this report a duplicate?
 - Was the reported damage actually reduced after repair?
 - Did a previously resolved issue reappear?
 - Where are multiple high-risk issues concentrated?
@@ -36,21 +36,21 @@ The platform focuses on:
 
 CivicPulse uses a **YOLO11n** object detection model trained on the **RDD2022** road-damage dataset.
 
-Supported damage classes:
+Supported classes:
 
 | Class | Description |
 |---|---|
-| Longitudinal Crack | Crack running mainly along the road direction |
-| Transverse Crack | Crack running mainly across the road direction |
+| Longitudinal Crack | Crack mainly along the road direction |
+| Transverse Crack | Crack mainly across the road direction |
 | Alligator Crack | Interconnected fatigue cracking |
-| Pothole | Localized pavement damage/depression |
+| Pothole | Localized pavement damage |
 
 The model provides:
 
 - Damage type
 - Detection confidence
 - Bounding box
-- Estimated affected image area
+- Estimated affected area
 
 ---
 
@@ -89,13 +89,13 @@ Priority levels:
 - High
 - Critical
 
-The scoring system is a transparent prototype heuristic rather than a municipal policy standard.
+The scoring system is a prototype heuristic rather than a municipal policy standard.
 
 ---
 
 ### 4. Duplicate Issue Detection
 
-CivicPulse generates lightweight image embeddings using **OpenCV and NumPy** and compares them using cosine similarity.
+CivicPulse uses lightweight image embeddings generated with **OpenCV and NumPy** and compares them using cosine similarity.
 
 Reports can be classified as:
 
@@ -103,7 +103,7 @@ Reports can be classified as:
 - **Related**
 - **New Issue**
 
-The current similarity thresholds are prototype engineering thresholds and require further calibration using a larger labeled dataset.
+The current similarity thresholds are prototype engineering thresholds and require further calibration with a larger labeled dataset.
 
 ---
 
@@ -115,7 +115,7 @@ When an authority uploads an after-repair image, the system:
 
 1. Re-analyzes the original issue image.
 2. Analyzes the submitted repair image.
-3. Checks whether the images represent the same scene.
+3. Checks whether both images represent the same scene.
 4. Compares detected damage.
 5. Estimates detected-area reduction.
 6. Produces a verification result.
@@ -127,15 +127,13 @@ Possible outcomes:
 - **Not Resolved**
 - **Inconclusive**
 
-This helps prevent an issue from being marked resolved without visual evidence.
+This provides visual evidence before an issue is considered resolved.
 
 ---
 
 ### 6. Persistent / Reopened Issues
 
 CivicPulse can connect a new report to a previously resolved issue when sufficient similarity and location/scene evidence exists.
-
-Example:
 
 ```text
 Reported
@@ -151,4 +149,3 @@ New Similar Report
 Linked to Previous Issue
    ↓
 Reopened / Persistent
-
