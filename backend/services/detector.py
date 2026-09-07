@@ -2,6 +2,8 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
+from database import supabase
+
 
 # Project root:
 # CivicPulse-AI/
@@ -19,12 +21,44 @@ MODEL_PATH = (
     / "CivicPulse-YOLO11n-baseline-best.pt"
 )
 
+MODEL_STORAGE_PATH = (
+    "models/CivicPulse-YOLO11n-baseline-best.pt"
+)
 
-if not MODEL_PATH.exists():
-    raise FileNotFoundError(
-        f"YOLO model not found at: {MODEL_PATH}"
+
+def ensure_model_exists():
+    """
+    Ensure the YOLO model exists locally.
+
+    Local development:
+        Uses the existing model file.
+
+    Render deployment:
+        Downloads the model from Supabase Storage
+        when the local model file is missing.
+    """
+
+    if MODEL_PATH.exists():
+        return
+
+    print("YOLO model not found locally.")
+    print("Downloading YOLO model from Supabase Storage...")
+
+    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    model_bytes = supabase.storage.from_(
+        "issue-images"
+    ).download(
+        MODEL_STORAGE_PATH
     )
 
+    with open(MODEL_PATH, "wb") as model_file:
+        model_file.write(model_bytes)
+
+    print(f"YOLO model downloaded successfully: {MODEL_PATH}")
+
+
+ensure_model_exists()
 
 model = YOLO(str(MODEL_PATH))
 
