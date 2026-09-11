@@ -24,16 +24,16 @@ The goal is to help authorities understand not only **what was reported**, but a
 
 ## Core Features
 
-- 🛣️ **AI Road-Damage Detection** — YOLO11n detects four RDD2022 damage classes.
-- 📊 **Visual Severity Estimation** — estimates Low, Moderate, or High severity using a transparent visual heuristic.
-- 🚨 **Priority Scoring** — converts severity, damage type, affected area, and confidence into a 0–100 priority score.
-- 🔍 **Duplicate / Related Detection** — compares issue images using a lightweight OpenCV + NumPy embedding pipeline.
-- 🛠️ **AI-Assisted Resolution Verification** — compares before/after images and estimates detected-area reduction.
-- 🔄 **Persistent / Reopened Issues** — links later similar reports to previously resolved issues.
-- 📍 **Geographic Risk Hotspots** — groups nearby GPS-enabled issues and highlights high-risk areas.
-- 🔐 **Authority Authentication** — protected authority login and dashboard APIs.
-- 🗺️ **Interactive Civic Map** — visualizes reported issues geographically.
-- 🗄️ **Cloud Persistence** — Supabase PostgreSQL and Storage keep issue and image data persistent.
+- **AI Road-Damage Detection** — YOLO11n detects four RDD2022 damage classes.
+- **Visual Severity Estimation** — estimates Low, Moderate, or High severity using a transparent visual heuristic.
+- **Priority Scoring** — converts severity, damage type, affected area, and confidence into a 0–100 priority score.
+- **Duplicate / Related Detection** — compares issue images using a lightweight OpenCV + NumPy embedding pipeline.
+- **AI-Assisted Resolution Verification** — compares before/after images and estimates detected-area reduction.
+- **Persistent / Reopened Issues** — links later similar reports to previously resolved issues.
+- **Geographic Risk Hotspots** — groups nearby GPS-enabled issues and highlights high-risk areas.
+- **Authority Authentication** — protected authority login and dashboard APIs.
+- **Interactive Civic Map** — visualizes reported issues geographically.
+- **Cloud Persistence** — Supabase PostgreSQL and Storage keep issue and image data persistent.
 
 ---
 
