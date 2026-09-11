@@ -2,212 +2,109 @@
 
 > **Reporting a civic issue is easy. Proving it was actually fixed is the problem.**
 
-CivicPulse AI is an AI-powered civic infrastructure intelligence platform that detects road damage, estimates visual severity, prioritizes reported issues, identifies duplicate reports, verifies claimed repairs, detects persistent/reopened issues, and highlights geographic risk hotspots.
+CivicPulse AI is an end-to-end civic infrastructure intelligence platform that uses computer vision and geospatial intelligence to detect road damage, prioritize issues, identify duplicate reports, verify claimed repairs, detect persistent/reopened problems, and surface geographic risk hotspots.
 
-It combines computer vision, image similarity, geospatial analysis, a FastAPI backend, a Next.js frontend, and Supabase.
+**Live Website:** https://civic-pulse-ai-xi.vercel.app/  
+**Backend API:** https://civicpulse-ai-backend-gnkx.onrender.com  
+**API Docs:** https://civicpulse-ai-backend-gnkx.onrender.com/docs
 
 ---
 
 ## Why CivicPulse?
 
-Traditional civic complaint systems mainly answer:
+Most civic reporting systems stop after collecting a complaint.
 
-**"Was an issue reported?"**
+CivicPulse adds an intelligence and accountability layer:
 
-CivicPulse goes further:
+**Report → Detect → Prioritize → Verify Repair → Detect Persistence → Identify Hotspots**
 
-- What type of damage is visible?
-- How severe does it appear visually?
-- Which issues should be prioritized?
-- Is this report a duplicate?
-- Was the reported damage actually reduced after repair?
-- Did a previously resolved issue reappear?
-- Where are multiple high-risk issues concentrated?
-
-The platform focuses on:
-
-**Detection → Prioritization → Resolution Verification → Persistence Intelligence**
+The goal is to help authorities understand not only **what was reported**, but also **what needs attention and whether a claimed repair appears to have worked**.
 
 ---
 
 ## Core Features
 
-### 1. AI Road-Damage Detection
-
-CivicPulse uses a **YOLO11n** object detection model trained on the **RDD2022** road-damage dataset.
-
-Supported damage classes:
-
-| Class | Description |
-|---|---|
-| Longitudinal Crack | Crack mainly along the road direction |
-| Transverse Crack | Crack mainly across the road direction |
-| Alligator Crack | Interconnected fatigue cracking |
-| Pothole | Localized pavement damage |
-
-The model provides:
-
-- Damage type
-- Detection confidence
-- Bounding box
-- Estimated affected image area
-
-### 2. Visual Severity Estimation
-
-Severity is estimated using a transparent visual heuristic based on:
-
-- Damage type
-- Detected affected area
-
-Severity levels:
-
-- Low
-- Moderate
-- High
-
-This is an AI-assisted visual estimate and **not an engineering-grade pavement severity classification**.
-
-### 3. Priority Scoring
-
-CivicPulse converts detection signals into a **0–100 priority score**.
-
-The score considers:
-
-- Visual severity
-- Damage type
-- Affected area
-- Detection confidence
-
-Priority levels:
-
-- Low
-- Medium
-- High
-- Critical
-
-The scoring system is a prototype heuristic rather than a municipal policy standard.
-
-### 4. Duplicate Issue Detection
-
-CivicPulse uses lightweight image embeddings generated with **OpenCV and NumPy** and compares them using cosine similarity.
-
-Reports can be classified as:
-
-- **Duplicate**
-- **Related**
-- **New Issue**
-
-The current similarity thresholds are prototype engineering thresholds and require further calibration with a larger labeled dataset.
-
-### 5. AI Resolution Verification
-
-One of CivicPulse's main differentiators is **AI-assisted repair verification**.
-
-When an authority uploads an after-repair image, the system:
-
-1. Re-analyzes the original issue image.
-2. Analyzes the submitted repair image.
-3. Checks whether both images represent the same scene.
-4. Compares detected damage.
-5. Estimates detected-area reduction.
-6. Produces a verification result.
-
-Possible outcomes:
-
-- **AI Verified**
-- **Partially Resolved**
-- **Not Resolved**
-- **Inconclusive**
-
-This provides visual evidence before an issue is considered resolved.
-
-### 6. Persistent / Reopened Issues
-
-CivicPulse can connect a new report to a previously resolved issue when sufficient similarity and location/scene evidence exists.
-
-```text
-Reported
-   ↓
-In Progress
-   ↓
-Resolved
-   ↓
-AI Verified
-   ↓
-New Similar Report
-   ↓
-Linked to Previous Issue
-   ↓
-Reopened / Persistent
-```
-
-This helps identify recurring infrastructure problems instead of treating every report as an isolated complaint.
-
-### 7. Geographic Risk Hotspots
-
-GPS-enabled issues are grouped geographically to identify areas containing multiple nearby high-priority issues.
-
-The dashboard provides:
-
-- Hotspot clusters
-- Cluster size
-- Risk score
-- Risk level
-- Cluster center
-- Nearby issues
-- Interactive map visualization
+- 🛣️ **AI Road-Damage Detection** — YOLO11n detects four RDD2022 damage classes.
+- 📊 **Visual Severity Estimation** — estimates Low, Moderate, or High severity using a transparent visual heuristic.
+- 🚨 **Priority Scoring** — converts severity, damage type, affected area, and confidence into a 0–100 priority score.
+- 🔍 **Duplicate / Related Detection** — compares issue images using a lightweight OpenCV + NumPy embedding pipeline.
+- 🛠️ **AI-Assisted Resolution Verification** — compares before/after images and estimates detected-area reduction.
+- 🔄 **Persistent / Reopened Issues** — links later similar reports to previously resolved issues.
+- 📍 **Geographic Risk Hotspots** — groups nearby GPS-enabled issues and highlights high-risk areas.
+- 🔐 **Authority Authentication** — protected authority login and dashboard APIs.
+- 🗺️ **Interactive Civic Map** — visualizes reported issues geographically.
+- 🗄️ **Cloud Persistence** — Supabase PostgreSQL and Storage keep issue and image data persistent.
 
 ---
 
-## End-to-End Workflow
+## Screenshots
+
+### CivicPulse Homepage
+![CivicPulse Homepage](docs/screenshots/01-homepage.png)
+
+### Citizen Issue Reporting
+![Citizen Issue Reporting](docs/screenshots/02-report-dashboard.png)
+
+### AI-Powered Analysis
+![AI Analysis](docs/screenshots/03-ai-analysis.png)
+
+### Authority Login & Dashboard
+![Authority Dashboard](docs/screenshots/04-authority-dashboard.png)
+
+### Civic Map & Risk Hotspots
+![Civic Map and Risk Hotspots](docs/screenshots/05-civic-map-hotspots.png)
+
+### Issue Queue & Resolution
+![Issue Resolution](docs/screenshots/06-issue-resolution.png)
+
+---
+
+## How It Works
 
 ```text
 Citizen
    │
-   ├── Upload issue image
+   ├── Upload image
    ├── Add description
-   └── Capture GPS location
-            │
-            ▼
-      FastAPI Backend
-            │
-            ▼
-       YOLO11n Detection
-            │
-            ├── Damage Type
-            ├── Confidence
-            └── Area
-            │
-            ▼
-      Severity Estimation
-            │
-            ▼
-       Priority Scoring
-            │
-            ├───────────────┐
-            ▼               ▼
-     Duplicate Check     Supabase
-            │             Storage
-            └──────┬────────┘
-                   ▼
-          Authority Dashboard
-                   │
-             ┌─────┴─────┐
-             ▼           ▼
-       Status Flow   Repair Upload
-             │           │
-             │           ▼
-             │    Scene Comparison
-             │           │
-             │           ▼
-             │   Resolution Verification
-             │           │
-             └───────────┤
-                         ▼
-                 Future Reports
-                         │
-                         ▼
-                Persistent/Reopened
+   └── Capture GPS
+   │
+   ▼
+FastAPI Backend
+   │
+   ▼
+YOLO11n Detection
+   │
+   ├── Damage Type
+   ├── Confidence
+   └── Affected Area
+   │
+   ▼
+Severity + Priority
+   │
+   ▼
+Image Similarity / Duplicate Detection
+   │
+   ▼
+Supabase PostgreSQL + Storage
+   │
+   ▼
+Authority Dashboard
+   │
+   ├── Reported
+   ├── In Progress
+   └── Resolved
+          │
+          ▼
+    Resolution Image
+          │
+          ▼
+   AI Resolution Verification
+          │
+          ▼
+ Persistent / Reopened Detection
+          │
+          ▼
+ Geographic Risk Hotspots
 ```
 
 ---
@@ -215,53 +112,65 @@ Citizen
 ## System Architecture
 
 ```text
-┌─────────────────────────────────┐
-│          Next.js Frontend       │
-│  Citizen Portal + Authority UI │
-└───────────────┬─────────────────┘
-                │ REST API
-                ▼
-┌─────────────────────────────────┐
-│            FastAPI              │
-│         Backend Services        │
-├─────────────────────────────────┤
-│ Detection                       │
-│ Severity                        │
-│ Priority                        │
-│ Duplicate Detection             │
-│ Resolution Verification         │
-│ Persistence Detection           │
-│ Authority Authentication        │
-└───────────────┬─────────────────┘
-                │
-        ┌───────┴────────┐
-        ▼                ▼
-┌──────────────┐  ┌────────────────┐
-│ YOLO11n      │  │    Supabase    │
-│ PyTorch      │  │ PostgreSQL     │
-│ OpenCV       │  │ Storage        │
-└──────────────┘  └────────────────┘
+┌─────────────────────────────────────┐
+│           Next.js Frontend          │
+│                                     │
+│  Citizen Portal + Authority UI      │
+└──────────────────┬──────────────────┘
+                   │ REST API
+                   ▼
+┌─────────────────────────────────────┐
+│              FastAPI                │
+│                                     │
+│ Authentication                      │
+│ Issue Analysis                      │
+│ Detection                           │
+│ Severity                            │
+│ Priority                            │
+│ Duplicate Detection                 │
+│ Resolution Verification             │
+│ Persistence Detection               │
+└───────────────┬───────────────┬─────┘
+                │               │
+                ▼               ▼
+      ┌────────────────┐  ┌────────────────┐
+      │ ML / Computer  │  │    Supabase    │
+      │ Vision         │  │                │
+      │                │  │ PostgreSQL     │
+      │ YOLO11n        │  │ Storage        │
+      │ PyTorch        │  │ Issue Data     │
+      │ OpenCV         │  │ Embeddings     │
+      │ NumPy          │  │ Images         │
+      └────────────────┘  └────────────────┘
 ```
+
+---
+
+## Technology Stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | Next.js, React, TypeScript |
+| UI | Tailwind CSS, shadcn/ui |
+| Charts | Recharts |
+| Maps | Leaflet, React Leaflet, OpenStreetMap |
+| Backend | Python, FastAPI, Pydantic, Uvicorn |
+| Computer Vision | YOLO11n, PyTorch, OpenCV, NumPy |
+| Database | Supabase PostgreSQL |
+| Storage | Supabase Storage |
+| Authentication | Custom signed-token authority authentication |
+| Model Training | Kaggle, NVIDIA Tesla T4 |
+| Deployment | Vercel, Render |
+| Version Control | Git, GitHub |
 
 ---
 
 ## Machine Learning
 
-### Road-Damage Detector
-
-**Model:** YOLO11n
-
-**Dataset:** RDD2022
-
-**Training configuration:**
-
-| Parameter | Value |
-|---|---|
-| Epochs | 50 |
-| Image Size | 640 |
-| Batch Size | 16 |
-| GPU | NVIDIA Tesla T4 |
-| Classes | 4 |
+**Model:** YOLO11n  
+**Dataset:** RDD2022  
+**Classes:** Longitudinal Crack, Transverse Crack, Alligator Crack, Pothole  
+**Training:** 50 epochs, 640 image size, batch size 16, NVIDIA Tesla T4
 
 ### Independent Test Results
 
@@ -280,130 +189,50 @@ Citizen
 | Transverse Crack | 0.554 | 0.519 | 0.521 | 0.257 |
 | Alligator Crack | 0.679 | 0.591 | 0.638 | 0.331 |
 | Pothole | 0.653 | 0.725 | 0.731 | 0.449 |
-| **Overall** | **0.627** | **0.590** | **0.611** | **0.335** |
 
-Pothole detection is currently the strongest class, while transverse cracking is comparatively more difficult for the baseline model.
+Pothole detection is currently the strongest class in the baseline evaluation, while transverse cracking is comparatively more difficult.
 
 ---
 
-## Resolution Verification
+## Database & Storage
 
-The verifier compares a before-repair image with an after-repair image.
+CivicPulse uses **Supabase PostgreSQL** for persistent issue records and **Supabase Storage** for images.
+
+Stored issue information includes:
+
+- Issue ID
+- Damage type and confidence
+- Affected area
+- Severity and priority
+- GPS coordinates
+- Description and location
+- Issue status
+- Resolution image and verification result
+- Duplicate relationship
+- Image embedding
+- Persistence relationship
+- Reopening information
 
 ```text
-Before Image ──┐
-               ├── Scene Similarity
-After Image ───┘
-                     │
-                     ▼
-                 Same Scene?
-                /           \
-              No             Yes
-              │               │
-              ▼               ▼
-        Inconclusive    Damage Comparison
-                              │
-                              ▼
-                        Area Reduction
-                              │
-               ┌──────────────┼──────────────┐
-               ▼              ▼              ▼
-             ≥70%           ≥30%           <30%
-               │              │              │
-               ▼              ▼              ▼
-          AI Verified    Partially       Not Resolved
-                          Resolved
+Frontend
+   │
+   ▼
+FastAPI
+   │
+   ▼
+Supabase PostgreSQL
+   ├── Issue metadata
+   ├── AI results
+   ├── Status
+   ├── Duplicate links
+   ├── Persistence links
+   └── Verification data
+          │
+          ▼
+   Supabase Storage
+   ├── Original images
+   └── Resolution images
 ```
-
-The pipeline has been tested with:
-
-- Same unchanged image → **Not Resolved**
-- Synthetic repaired image → **AI Verified**
-- Synthetic repair test → **100% detected-area reduction**
-
-The synthetic test validates pipeline behavior and does not represent real-world repair accuracy.
-
----
-
-## Authority Authentication
-
-CivicPulse includes a dedicated authority login system.
-
-Authentication provides:
-
-- Username/password login
-- Signed authentication token
-- 8-hour session expiry
-- Protected authority dashboard
-- Protected issue status updates
-- Protected resolution verification
-- Logout functionality
-
-The current implementation uses a **single configured authority account** and is intended for the prototype rather than a multi-user municipal identity system.
-
----
-
-## API
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/api/health` | Backend health check |
-| POST | `/api/auth/login` | Authority login |
-| GET | `/api/auth/me` | Verify authority session |
-| GET | `/api/issues` | Retrieve issues |
-| POST | `/api/issues/analyze` | Analyze a new issue |
-| PATCH | `/api/issues/{issue_id}/status` | Update issue status |
-| POST | `/api/issues/{issue_id}/verify` | Verify repair |
-
-Interactive API documentation:
-
-`https://civicpulse-ai-backend-gnkx.onrender.com/docs`
-
----
-
-## Technology Stack
-
-### Frontend
-
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Leaflet
-- React Leaflet
-- Recharts
-
-### Backend
-
-- Python
-- FastAPI
-- Pydantic
-- Uvicorn
-
-### Machine Learning
-
-- Ultralytics YOLO
-- YOLO11n
-- PyTorch
-- OpenCV
-- NumPy
-
-### Database & Storage
-
-- Supabase PostgreSQL
-- Supabase Storage
-
-### Maps
-
-- Leaflet
-- OpenStreetMap
-
-### Development
-
-- Git
-- GitHub
-- Kaggle GPU environment
 
 ---
 
@@ -416,34 +245,82 @@ CivicPulse-AI/
 │   ├── main.py
 │   ├── auth.py
 │   ├── database.py
+│   ├── requirements.txt
 │   ├── test_detector.py
+│   │
 │   ├── models/
 │   │   └── CivicPulse-YOLO11n-baseline-best.pt
+│   │
 │   └── services/
 │       ├── detector.py
 │       ├── duplicate.py
 │       ├── priority.py
 │       └── severity.py
 │
-├── data/
-│   ├── test.jpg
-│   └── test_after_repair.jpg
-│
 ├── frontend/
 │   ├── app/
 │   │   ├── dashboard/
 │   │   ├── login/
 │   │   └── page.tsx
+│   │
 │   └── components/
 │
-├── ml/
-│   └── data.yml
+├── data/
+├── docs/
+│   └── screenshots/
+│       ├── 01-homepage.png
+│       ├── 02-report-dashboard.png
+│       ├── 03-ai-analysis.png
+│       ├── 04-authority-dashboard.png
+│       ├── 05-civic-map-hotspots.png
+│       └── 06-issue-resolution.png
 │
+├── ml/
 ├── .gitignore
 └── README.md
 ```
 
-> The trained model, datasets, environment secrets, build artifacts, and dependency directories are excluded from Git history.
+### Important Directories
+
+| Directory | Purpose |
+|---|---|
+| `backend/` | FastAPI application and backend logic |
+| `backend/services/` | Detection, severity, priority, and similarity services |
+| `backend/models/` | Trained YOLO model |
+| `frontend/` | Next.js citizen and authority interfaces |
+| `frontend/app/` | Application routes/pages |
+| `frontend/components/` | Reusable UI components |
+| `data/` | Local test assets |
+| `docs/screenshots/` | README/project screenshots |
+| `ml/` | ML/data configuration |
+
+---
+
+## API Overview
+
+### Public
+
+```text
+GET  /api/health
+POST /api/issues/analyze
+```
+
+### Authority Authentication
+
+```text
+POST /api/auth/login
+GET  /api/auth/me
+```
+
+### Protected Authority APIs
+
+```text
+GET   /api/issues
+PATCH /api/issues/{issue_id}/status
+POST  /api/issues/{issue_id}/verify
+```
+
+Full interactive API documentation is available through FastAPI Swagger.
 
 ---
 
@@ -451,35 +328,33 @@ CivicPulse-AI/
 
 ### Prerequisites
 
-- Python 3.13
-- Node.js
-- npm
+- Python 3.13 recommended
+- Node.js and npm
 - Git
 - Supabase project
-- Required model assets
+- Required YOLO model file
 
-### 1. Clone Repository
+### Clone
 
 ```bash
 git clone https://github.com/kishanbishwakarma0/CivicPulse-AI.git
 cd CivicPulse-AI
 ```
 
-### 2. Backend Environment
+### Backend
 
 ```cmd
 python -m venv .venv
-call .venv\Scripts\activate
-```
-
-Install dependencies:
-
-```cmd
+call .venv\Scriptsctivate
 cd backend
 pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
-### 3. Environment Variables
+Backend: `http://127.0.0.1:8000`  
+Swagger: `http://127.0.0.1:8000/docs`
+
+### Backend Environment Variables
 
 Create a root `.env` file:
 
@@ -494,233 +369,114 @@ AUTH_TOKEN_SECRET=your_long_random_secret
 
 Never commit `.env` or expose backend secrets in the frontend.
 
-### 4. Frontend Environment
+### Frontend
 
-Create:
-
-```text
-frontend/.env.local
-```
-
-Add:
+Create `frontend/.env.local`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
 
-### 5. Start Backend
-
-From `backend/`:
+Then:
 
 ```cmd
-uvicorn main:app --reload
-```
-
-Backend:
-
-```text
-http://127.0.0.1:8000
-```
-
-Swagger:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-### 6. Start Frontend
-
-From `frontend/`:
-
-```cmd
+cd frontend
 npm install
 npm run dev
 ```
 
-Frontend:
+Frontend: `http://localhost:3000`  
+Authority Login: `http://localhost:3000/login`  
+Authority Dashboard: `http://localhost:3000/dashboard`
+
+---
+
+## Live Deployment
+
+**Frontend:** https://civic-pulse-ai-xi.vercel.app/  
+**Backend:** https://civicpulse-ai-backend-gnkx.onrender.com  
+**API Docs:** https://civicpulse-ai-backend-gnkx.onrender.com/docs
+
+The deployed prototype has been tested for citizen issue submission, AI analysis, authority authentication, status updates, resolution verification, persistence information, and data persistence after refresh.
+
+---
+
+## Resolution Verification
+
+CivicPulse compares the original issue image with an uploaded resolution image.
 
 ```text
-http://localhost:3000
+Before Image ──┐
+               ├── Scene Similarity
+After Image ───┘
+                     │
+                     ▼
+              Detection Comparison
+                     │
+                     ▼
+               Area Reduction
+                     │
+          ┌──────────┼──────────┐
+          ▼          ▼          ▼
+        ≥70%       ≥30%       <30%
+          │          │          │
+          ▼          ▼          ▼
+     AI Verified  Partially   Not Resolved
+                   Resolved
 ```
 
-Authority dashboard:
+The prototype has been tested with an unchanged image and a synthetic repaired image. The synthetic test produced **AI Verified with 100% detected-area reduction**.
 
-```text
-http://localhost:3000/dashboard
-```
+This validates pipeline behavior for the constructed test case; it is not a claim of real-world resolution accuracy.
 
 ---
 
-## Database
+## Limitations
 
-CivicPulse stores:
-
-- Damage type
-- Detection confidence
-- Affected area
-- Severity
-- Priority score
-- Priority level
-- GPS coordinates
-- Description and location
-- Issue status
-- Resolution information
-- Verification result
-- Duplicate relationships
-- Image embeddings
-- Persistence relationships
-
-Supabase Storage is used for issue and resolution images.
-
----
-
-## Evaluation & Testing
-
-### Model
-
-- Independent test evaluation
-- Class-wise detection metrics
-- Precision
-- Recall
-- mAP@50
-- mAP@50–95
-
-### Resolution Verification
-
-- Unchanged image test
-- Synthetic repaired-image test
-- Area-reduction verification
-
-### Persistence
-
-- Previous issue linkage
-- Reopened issue detection
-- Persistence status
-
-### Application
-
-- Backend health
-- Issue analysis
-- Status workflow
-- Authority authentication
-- Resolution verification
-- Production frontend build
-- Authority dashboard
-- Interactive map
-- Risk hotspot visualization
-
----
-
-## Current Limitations
-
-CivicPulse AI is a **research/engineering prototype**, not a production municipal inspection system.
-
-Important limitations:
-
-1. **Severity is heuristic.** It is based on visual signals rather than engineering measurements.
-2. **Priority is heuristic.** The scoring weights are prototype design choices.
-3. **Duplicate thresholds require further calibration.**
-4. **Resolution verification needs real before/after datasets for proper validation.**
-5. **Scene similarity requires additional calibration.**
-6. **RDD2022 focuses on road damage and does not cover every civic infrastructure problem.**
-7. **GPS accuracy depends on the user's device and browser.**
-8. **AI predictions should support human review rather than replace qualified infrastructure assessment.**
-9. **No municipal impact or partnership is claimed.**
+- Severity estimation is heuristic, not engineering-grade pavement inspection.
+- Priority scoring is a transparent prototype heuristic.
+- Duplicate and scene-similarity thresholds require further calibration.
+- Resolution verification needs a larger real before/after dataset.
+- RDD2022 is focused on road damage and does not cover every civic infrastructure problem.
+- GPS accuracy depends on the user's device/browser.
+- The system is a technical prototype and does not replace professional infrastructure inspection.
 
 ---
 
 ## Dataset & Attribution
 
-The road-damage detector uses **RDD2022 — The multi-national Road Damage Dataset released through CRDDC 2022**.
+CivicPulse uses **RDD2022 — The multi-national Road Damage Dataset released through CRDDC 2022** for road-damage detection.
 
-RDD2022 is used for the road-damage detection component and is distributed under **CC BY-SA 4.0**.
+**License:** CC BY-SA 4.0
 
-Official resources:
+The dataset is not included in this repository.
 
-- RDD2022 / CRDDC 2022
-- RoadDamageDetector repository
-- RDD2022 dataset on Figshare
-
-The dataset itself is **not included in this repository**.
-
----
-
-## Responsible Use
-
-CivicPulse AI is intended as a **decision-support prototype**.
-
-AI predictions can be incorrect. Detection confidence, severity, priority, duplicate relationships, and resolution verification should therefore be treated as signals for human review.
-
-Real-world deployment would require:
-
-- Domain validation
-- Privacy and data-retention policies
-- Security hardening
-- Human review procedures
-- Model monitoring
-- Bias and error analysis
-- Operational integration with responsible authorities
-
----
-
-## Deployment
-
-### Frontend
-
-**Vercel**
-
-https://civic-pulse-ai-xi.vercel.app/
-
-### Backend
-
-**Render**
-
-https://civicpulse-ai-backend-gnkx.onrender.com
-
-### Database & Storage
-
-**Supabase**
-
-The production deployment uses the Next.js frontend, FastAPI backend, and Supabase PostgreSQL/Storage infrastructure.
+- RDD2022 / CRDDC 2022: https://crddc2022.sekilab.global/data/
+- RoadDamageDetector: https://github.com/sekilab/RoadDamageDetector
+- RDD2022 on Figshare: https://figshare.com/articles/dataset/RDD2022_-_The_multi-national_Road_Damage_Dataset_released_through_CRDDC_2022/21431547
 
 ---
 
 ## Project Status
 
-**Current Status: Functional End-to-End Prototype**
-
-Implemented:
+**Functional End-to-End Prototype**
 
 - [x] YOLO11n road-damage detection
-- [x] Detection evaluation
+- [x] Model evaluation
 - [x] Visual severity estimation
 - [x] Priority scoring
-- [x] Duplicate issue detection
-- [x] Duplicate database linkage
+- [x] Duplicate / related issue detection
 - [x] Citizen issue submission
 - [x] GPS capture
 - [x] Authority authentication
 - [x] Authority dashboard
 - [x] Issue status workflow
-- [x] AI resolution verification
-- [x] Persistent/reopened issue detection
+- [x] AI-assisted resolution verification
+- [x] Persistent / reopened issue detection
 - [x] Interactive issue map
 - [x] Geographic risk hotspots
-- [x] Supabase integration
-- [x] Production frontend deployment
-- [x] Production backend deployment
-
-### Future Improvements
-
-- Larger duplicate-detection benchmark
-- Real before/after repair dataset
-- Dedicated severity model
-- Learned priority scoring
-- More civic infrastructure categories
-- Explainable AI overlays
-- Advanced persistence modeling
-- Model monitoring and drift evaluation
-- Multi-user role-based authority access
+- [x] Supabase database and storage
+- [x] Production deployment
 
 ---
 
@@ -728,4 +484,4 @@ Implemented:
 
 **Kishan Bishwakarma**
 
-**CivicPulse AI — AI-powered civic infrastructure intelligence.**
+CivicPulse AI — AI-powered civic infrastructure intelligence.
